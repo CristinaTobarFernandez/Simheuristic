@@ -99,12 +99,12 @@ def prize_collecting_TSP_multiscenario(n, c, d, D, num_scenarios, probabilities,
         model.PI = Var(model.S) #cvar auxiliary variable
         #definition of OF per scenario
         def of_cv_cons(model,s):
-            return model.PI[s] - cost_per_km*sum(sum(model.x[i,j]*c[i-1][j-1] for j in model.N) for i in model.N) - cost_per_no_del_demand*sum((1-model.y[i])*d[s-1][i-1] for i in model.N) == 0
+            return model.PI[s] - cost_per_km*sum(sum(model.x[i,j]*c[i-1][j-1] for j in model.N) for i in model.N) - cost_per_no_del_demand*sum((1-model.y[i])*d[i-1][s-1] for i in model.N) == 0
         model.costcv_cons_cons = Constraint(model.S, rule=of_cv_cons)
 
         def obj_expression(model): 
             return sum(probabilities[s] * (sum(model.x[i, j] * c[i - 1][j - 1] for j in model.N) +
-                                        (1 - model.y[i]) * d[s][i - 1]) for i in model.N for s in range(num_scenarios))
+                                        (1 - model.y[i]) * d[i - 1][s]) for i in model.N for s in range(num_scenarios))
         model.OBJ = Objective(rule=obj_expression, sense=minimize) 
     elif method == 'Conditional Value at Risk (CVaR)':
         '''Risk aversion implies a preference for more certain outcomes over more uncertain outcomes, 
@@ -123,7 +123,7 @@ def prize_collecting_TSP_multiscenario(n, c, d, D, num_scenarios, probabilities,
 
         #definition of OF per scenario
         def of_cv_cons(model,s):
-            return model.PI[s] - cost_per_km*sum(sum(model.x[i,j]*c[i-1][j-1] for j in model.N) for i in model.N) - cost_per_no_del_demand*sum((1-model.y[i])*d[s-1][i-1] for i in model.N) == 0
+            return model.PI[s] - cost_per_km*sum(sum(model.x[i,j]*c[i-1][j-1] for j in model.N) for i in model.N) - cost_per_no_del_demand*sum((1-model.y[i])*d[i-1][s-1] for i in model.N) == 0
         model.costcv_cons_cons = Constraint(model.S, rule=of_cv_cons)
 
         def obj_expression(model):
@@ -135,12 +135,12 @@ def prize_collecting_TSP_multiscenario(n, c, d, D, num_scenarios, probabilities,
         model.PI = Var(model.S) #cvar auxiliary variable
         #definition of OF per scenario
         def of_cv_cons(model,s):
-            return model.PI[s] - cost_per_km*sum(sum(model.x[i,j]*c[i-1][j-1] for j in model.N) for i in model.N) - cost_per_no_del_demand*sum((1-model.y[i])*d[s-1][i-1] for i in model.N) == 0
+            return model.PI[s] - cost_per_km*sum(sum(model.x[i,j]*c[i-1][j-1] for j in model.N) for i in model.N) - cost_per_no_del_demand*sum((1-model.y[i])*d[i-1][s-1] for i in model.N) == 0
         model.costcv_cons_cons = Constraint(model.S, rule=of_cv_cons)
 
         #definition of OF per scenario
         def worst_case_cons(model,s):
-            return sum(sum(model.x[i,j]*c[i-1][j-1] for j in model.N) for i in model.N) + sum((1-model.y[i])*d[s-1][i-1] for i in model.N) <= model.t
+            return sum(sum(model.x[i,j]*c[i-1][j-1] for j in model.N) for i in model.N) + sum((1-model.y[i])*d[i-1][s-1] for i in model.N) <= model.t
         model.worst_case_cons = Constraint(model.S, rule=worst_case_cons)
 
         def obj_expression(model): 
@@ -174,7 +174,7 @@ def prize_collecting_TSP_multiscenario(n, c, d, D, num_scenarios, probabilities,
 
     # Max capacity constraint
     def capacity(model, i, s): 
-        return sum(model.y[i] * d[s][i - 1] for i in model.N) <= D
+        return sum(model.y[i] * d[i - 1][s]for i in model.N) <= D
     model.capacity_Constraint = Constraint(model.N, range(num_scenarios), rule=capacity)
 
     start = time.time()
@@ -200,13 +200,6 @@ def feed_solution_variables(model, n, d, c):
     for i in range(0, n):
         y_sol[i] = model.y[i+1].value
         u_sol[i] = model.u[i+1].value
-        if y_sol[i]:
-            capacity_used += d[i]
-        for j in range(0,n):
-            x_sol[i,j]=model.x[i+1,j+1].value
-            if x_sol[i,j] == 1:
-                total_cost += c[i][j]
-
     opt_value = model.OBJ()
 
     for i in range(0, n):

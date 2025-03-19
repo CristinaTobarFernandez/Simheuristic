@@ -2,24 +2,28 @@ import logging
 import random
 from algorithms.structure.InstancePCTSP import InstancePCTSP
 from algorithms.structure.SolutionPCTSP import SolutionPCTSP
+from utils import MultiScenarioMethod
 from models.outputs.Solution import Solution
 import copy
 import time
 
-class Deterministic:
-    def __init__(self, instance: InstancePCTSP):
+class MultiScenario:
+    def __init__(self, instance: InstancePCTSP, ms_method: MultiScenarioMethod, num_scenarios: int, alpha: float = 0.95):
         self.instance = instance
+        self.num_scenarios = num_scenarios
+        self.ms_method = ms_method
+        self.alpha = alpha
 
     def solve(self):
         start_time = time.time()
         best_solution = None
         max_iterations = 100
-        alpha = 0.2
+        alpha_constructive = 0.2
         for _ in range(max_iterations):
             if _ % 100 == 0:
                 logging.info(f"Iteration {_}")
             # Construct a new solution
-            solution = self.constructive_heuristic(alpha)
+            solution = self.constructive_heuristic(alpha_constructive)
             # Improve the constructed solution
             self.improve(solution)
             # Update the best solutuon if the new solution is better
@@ -39,7 +43,7 @@ class Deterministic:
         return solution
 
 
-    def constructive_heuristic(self, alpha):
+    def constructive_heuristic(self, alpha_constructive):
         # Podría ser que no haya clientes que puedan ser el primer cliente ya que su demanda es mayor que la capacidad de la camioneta
         posibles_first_customers = [customer for customer in self.instance.customers_list if customer.demand_determined <= self.instance.truck_capacity]
         if len(posibles_first_customers) == 0:
@@ -79,7 +83,7 @@ class Deterministic:
             )
             
             # Select one of the top alpha% customers
-            top_count = max(1, int(len(sorted_customers) * alpha))
+            top_count = max(1, int(len(sorted_customers) * alpha_constructive))
             best_candidate = random.choice(sorted_customers[:top_count])
             if best_candidate[1] > 0: # Si empeoramos la solución, no seguimos buscando
                 break
@@ -119,7 +123,7 @@ class Deterministic:
                     new_solution = SolutionPCTSP(self.instance)
                     for customer in new_route:
                         new_solution.add_customer(customer)
-                    new_solution.compute_total_cost()
+                    new_solution.compute_total_cost(ms=True, ms_method=self.ms_method, num_scenarios=self.num_scenarios, alpha=self.alpha)
                     if new_solution.is_better_than(solution) and new_solution.is_feasible():
                         solution.route = new_route
                         solution.total_cost = new_solution.total_cost
@@ -134,7 +138,7 @@ class Deterministic:
                         new_solution = SolutionPCTSP(self.instance)
                         for customer in new_route:
                             new_solution.add_customer(customer)
-                        new_solution.compute_total_cost()
+                        new_solution.compute_total_cost(ms=True, ms_method=self.ms_method, num_scenarios=self.num_scenarios, alpha=self.alpha)
                         if new_solution.is_better_than(solution) and new_solution.is_feasible():
                             solution.route = new_route
                             solution.total_cost = new_solution.total_cost
