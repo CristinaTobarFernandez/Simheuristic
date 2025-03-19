@@ -1,0 +1,124 @@
+from geopy.distance import geodesic
+from .Customer import Customer
+import pandas as pd
+import datetime
+import random
+import os
+from utils import ConfigLog, handle_exceptions
+from utils.io.io_utils import create_path
+
+class Problem:
+    def __init__(self, date, problem_name, max_customers:int = 50):
+        self.date_str = date
+        year, month, day = date.split('-')
+        self.date = datetime.datetime(int(year), int(month), int(day))
+        self.year = int(year)
+        self.month = int(month)
+        self.day = int(day)
+
+        self.max_customers = max_customers
+
+        self.problem_name = problem_name
+
+        self.cost_per_km = 100
+        self.cost_per_no_del_demand = 10
+        self.truck_capacity_per_customer = 100
+
+        self.customers_map = {}
+        self.customers_list = []
+
+        self.distance_matrix = {}
+
+        self.truck_capacity = 0
+        self.n_customers = 0
+
+        self.node_data = None
+        self.demand_data = None
+
+    @handle_exceptions
+    def feed(self):
+        self.read_data()
+        path = create_path(self.date, self.max_customers)
+        node_data_model, demand_data_model, real_demand = self.select_execution_data(path=path)
+
+        for _, row in real_demand.iterrows():
+            record_data = demand_data_model[demand_data_model['codnode'] == row['codnode']]
+            day_data = real_demand[real_demand['codnode'] == row['codnode']]
+            node_data = node_data_model[node_data_model['codnode'] == row['codnode']]
+            self.add_customer(row['codnode'], record_data, day_data, node_data)
+
+        self.truck_capacity = self.truck_capacity_per_customer * len(self.customers_list)
+        self.n_customers = len(self.customers_list)
+
+        self.compute_distance_matrix()
+
+    @handle_exceptions
+    def select_execution_data(self, path):
+        random.seed(10051347)
+        codnode_list = list(self.demand_data[self.demand_data['Date'] == self.date]['codnode'].values)
+        number_nodes = len(codnode_list)
+        if number_nodes > self.max_customers:
+            codnode_list = random.sample(codnode_list, self.max_customers)
+        node_data_model = self.node_data[self.node_data['codnode'].isin(codnode_list)]
+
+        demand_data_model = self.demand_data[(self.demand_data['Date'] < self.date) & 
+                                    (self.demand_data['codnode'].isin(codnode_list))]
+        real_demand= self.demand_data[(self.demand_data['Date'] == self.date) & (self.demand_data['codnode']
+                                                            .isin(codnode_list))]                       
+        # Sort based on codnode_list
+        node_data_model = node_data_model.sort_values(by='codnode')
+        demand_data_model = demand_data_model.sort_values(by='codnode')
+        real_demand = real_demand.sort_values(by='codnode')
+
+        node_data_model.to_csv(os.path.join(path, "nodeDataSelected.csv"), index=False)
+        demand_data_model.to_csv(os.path.join(path, "demandDataSelected.csv"), index=False)
+        real_demand.to_csv(os.path.join(path, "realDemand.csv"), index=False)
+        return node_data_model, demand_data_model, real_demand
+
+    @handle_exceptions
+    def read_data(self):
+        node_data_github_link = "https://raw.githubusercontent.com/critobfer/StocasticOpt/main/data/nodeData.csv"
+        demand_data_github_link = "https://raw.githubusercontent.com/critobfer/StocasticOpt/main/data/demandDataComplete.csv"
+
+        node_data = pd.read_csv(node_data_github_link, sep=';', encoding='latin-1') 
+
+        demand_data = pd.read_csv(demand_data_github_link, sep=';', encoding='latin-1') 
+        demand_data['Date'] = pd.to_datetime(demand_data['Date'], format="%d/%m/%Y")      
+
+        self.node_data = node_data
+        self.demand_data = demand_data
+
+    @handle_exceptions
+    def add_customer(self, codnode, record_data, day_data, node_data):
+        index = len(self.customers_list)
+        customer = Customer(index, codnode, record_data, day_data, node_data)
+        self.customers_map[customer.codnode] = customer
+        self.customers_list.append(customer)
+    
+    def get_customer_by_codnode(self, codnode):
+        return self.customers_map[codnode]
+
+    @handle_exceptions
+    def compute_distance_matrix(self):
+        self.distance_matrix = [[None for _ in range(len(self.customers_list))] for _ in range(len(self.customers_list))]
+        
+        for customer in self.customers_list:
+            for other_customer in self.customers_list:
+                if self.distance_matrix[customer.index][other_customer.index] is not None:
+                    continue
+                if customer != other_customer:
+                    distance = self.compute_distance(customer, other_customer)
+                    self.distance_matrix[customer.index][other_customer.index] = distance
+                    self.distance_matrix[other_customer.index][customer.index] = distance
+                else:
+                    self.distance_matrix[customer.index][other_customer.index] = 0
+
+    @handle_exceptions
+    def compute_distance(self, customer1, customer2):
+        return geodesic((customer1.latitude, customer1.longitude), (customer2.latitude, customer2.longitude)).kilometers
+    
+    def get_all_real_demands(self):
+        return sum([customer.real_demand for customer in self.customers_list])
+
+
+

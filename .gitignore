@@ -1,0 +1,11 @@
+*.venv
+*__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyvenv.cfg
+*.pycpython3.10.pyc
+outputs_files/*
