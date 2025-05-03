@@ -43,7 +43,5 @@ class InstancePCTSP:
     def set_progressive_demand_scenario_probabilities(self):
         self.p_scenarios = [1/i for i in range(1, self.n_scenarios+1)]
         self.p_scenarios = [p/sum(self.p_scenarios) for p in self.p_scenarios]
-        print(self.p_scenarios)
-        print(sum(self.p_scenarios))
 
 

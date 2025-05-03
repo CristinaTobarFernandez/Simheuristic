@@ -17,10 +17,10 @@ class MultiScenario:
     def solve(self):
         start_time = time.time()
         best_solution = None
-        max_iterations = 100
+        max_iterations = 10
         alpha_constructive = 0.2
         for _ in range(max_iterations):
-            if _ % 100 == 0:
+            if _ % 1 == 0:
                 logging.info(f"Iteration {_}")
             # Construct a new solution
             solution = self.constructive_heuristic(alpha_constructive)

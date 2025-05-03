@@ -184,7 +184,6 @@ def prize_collecting_TSP_multiscenario(n, c, d, D, num_scenarios, probabilities,
     logger.info('######################################################')
     logger.info('With ' + str(n) + ' points: '+ str(end-start) + 's')
     logger.info('######################################################')
-    print(model.y[1].value)
     if opt.get_model_attr('Status') != 2:
         logger.info("Suboptimal Solution with gap " + str(round(opt.get_model_attr('MIPGap')*100,2))  + '%')
     else:

@@ -13,7 +13,7 @@ class Deterministic:
     def solve(self):
         start_time = time.time()
         best_solution = None
-        max_iterations = 100
+        max_iterations = 10
         alpha = 0.2
         for _ in range(max_iterations):
             if _ % 100 == 0:

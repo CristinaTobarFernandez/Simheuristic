@@ -13,7 +13,7 @@ from sklearn.neighbors import KNeighborsRegressor
 def linear_regresion(X_train, X_test, y_train):
     result = {}
     transformations = ColumnTransformer([
-        ('encoder', OneHotEncoder(), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
+        ('encoder', OneHotEncoder(handle_unknown='ignore'), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
     ], remainder='passthrough')
 
     X_train_trans = transformations.fit_transform(X_train)
@@ -44,7 +44,7 @@ def linear_regresion(X_train, X_test, y_train):
 def random_forest(X_train, X_test, y_train):
     result = {}
     transformations = ColumnTransformer([
-        ('encoder', OneHotEncoder(), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
+        ('encoder', OneHotEncoder(handle_unknown='ignore'), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
     ], remainder='passthrough')
 
     X_train_trans = transformations.fit_transform(X_train)
@@ -55,7 +55,6 @@ def random_forest(X_train, X_test, y_train):
     # Initialize GridSearchCV for hyperparameter tuning
     grid_search = GridSearchCV(RandomForestRegressor(random_state=42), param_grid, cv=5)
     grid_search.fit(X_train_trans, y_train)
-    print("Best Parameters:", grid_search.best_params_)
     # Best model found by GridSearchCV
     model = grid_search.best_estimator_
     # Inicializar y entrenar el modelo de regresión lineal
@@ -91,7 +90,7 @@ def svm(X_train, X_test, y_train):
     numerical = [col for col in column_total if col not in cathegorical]
 
     transformations = ColumnTransformer([
-        ('cathegorical', OneHotEncoder(), cathegorical),
+        ('cathegorical', OneHotEncoder(handle_unknown='ignore'), cathegorical),
         ('numerical', StandardScaler(), numerical)
                                             ])
 
@@ -124,7 +123,7 @@ def svm(X_train, X_test, y_train):
 def neural_network(X_train, X_test, y_train):
     result = {}
     transformations = ColumnTransformer([
-        ('encoder', OneHotEncoder(), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
+        ('encoder', OneHotEncoder(handle_unknown='ignore'), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
     ], remainder='passthrough')
 
     X_train_trans = transformations.fit_transform(X_train)
@@ -170,7 +169,7 @@ def xgboost_lgbm(X_train, X_test, y_train):
     
     result = {}
     transformations = ColumnTransformer([
-        ('encoder', OneHotEncoder(), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
+        ('encoder', OneHotEncoder(handle_unknown='ignore'), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
     ], remainder='passthrough')
 
     X_train_trans = transformations.fit_transform(X_train)
@@ -212,7 +211,7 @@ def xgboost_lgbm(X_train, X_test, y_train):
 def ridge_regression(X_train, X_test, y_train):
     result = {}
     transformations = ColumnTransformer([
-        ('encoder', OneHotEncoder(), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
+        ('encoder', OneHotEncoder(handle_unknown='ignore'), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
     ], remainder='passthrough')
 
     X_train_trans = transformations.fit_transform(X_train)
@@ -257,7 +256,7 @@ def ridge_regression(X_train, X_test, y_train):
 def lasso_regression(X_train, X_test, y_train):
     result = {}
     transformations = ColumnTransformer([
-        ('encoder', OneHotEncoder(), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
+        ('encoder', OneHotEncoder(handle_unknown='ignore'), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
     ], remainder='passthrough')
 
     X_train_trans = transformations.fit_transform(X_train)
@@ -299,7 +298,7 @@ def lasso_regression(X_train, X_test, y_train):
 
 def get_knn_demand(k, X_train, X_test, y_train):
     transformations = ColumnTransformer([
-        ('encoder', OneHotEncoder(), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
+        ('encoder', OneHotEncoder(handle_unknown='ignore'), ['ZIPcod', 'Day Of Week', 'Tomorrow Holiday'])
     ], remainder='passthrough')
 
     X_train_trans = transformations.fit_transform(X_train)
@@ -324,4 +323,4 @@ def get_knn_demand(k, X_train, X_test, y_train):
     min_dist = distances[0].min()
     max_dist = distances[0].max()
 
-    return k_nearest_values, min_dist, max_dist
+    return k_nearest_values, min_dist, max_dist, indexes

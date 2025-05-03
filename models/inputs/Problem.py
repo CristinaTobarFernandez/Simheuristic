@@ -6,6 +6,7 @@ import random
 import os
 from utils import ConfigLog, handle_exceptions
 from utils.io.io_utils import create_path
+from utils.ml_models import models
 
 class Problem:
     def __init__(self, date, problem_name, max_customers:int = 50):
@@ -40,12 +41,22 @@ class Problem:
         self.read_data()
         path = create_path(self.date, self.max_customers)
         node_data_model, demand_data_model, real_demand = self.select_execution_data(path=path)
-
         for _, row in real_demand.iterrows():
             record_data = demand_data_model[demand_data_model['codnode'] == row['codnode']]
             day_data = real_demand[real_demand['codnode'] == row['codnode']]
             node_data = node_data_model[node_data_model['codnode'] == row['codnode']]
-            self.add_customer(row['codnode'], record_data, day_data, node_data)
+            val_size = 0.2
+            k = 80 # int(len(record_data) * val_size) TODO
+            # Prepare data for KNN
+            X_train = record_data.drop(columns=['Pallets', 'codnode', 'Date', 'Year', 'Holiday'])  # Drop non-feature columns
+            y_train = record_data['Pallets']  
+            X_test = day_data.drop(columns=['Pallets', 'codnode', 'Date', 'Year', 'Holiday'])
+            _, _, _, indices = models.get_knn_demand(k, X_train, X_test, y_train)
+
+            # Select the top 20% as validation set
+            record_data_val = record_data.iloc[indices[0]]
+            record_data_train = record_data.drop(record_data_val.index)
+            self.add_customer(row['codnode'], record_data, record_data_train, record_data_val, day_data, node_data)
 
         self.truck_capacity = self.truck_capacity_per_customer * len(self.customers_list)
         self.n_customers = len(self.customers_list)
@@ -89,9 +100,9 @@ class Problem:
         self.demand_data = demand_data
 
     @handle_exceptions
-    def add_customer(self, codnode, record_data, day_data, node_data):
+    def add_customer(self, codnode, record_data, record_data_train, record_data_val, day_data, node_data):
         index = len(self.customers_list)
-        customer = Customer(index, codnode, record_data, day_data, node_data)
+        customer = Customer(index, codnode, record_data, record_data_train, record_data_val, day_data, node_data)
         self.customers_map[customer.codnode] = customer
         self.customers_list.append(customer)
     
