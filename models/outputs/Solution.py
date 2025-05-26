@@ -38,7 +38,7 @@ class Solution:
         cost_per_scenario = []
         feasible_per_scenario = []
         for scenario in range(num_scenarios):
-            cost = sum([customer.demand_validation_scenarios[scenario] for customer in self.customer_sequence])*self.problem.cost_per_no_del_demand
+            cost = self.problem.get_initial_validation_cost(scenario)
             capacity_used = 0
             for i in range(len(self.customer_sequence)):
                 cost += self.problem.cost_per_km * self.problem.distance_matrix[self.customer_sequence[i-1].index][self.customer_sequence[i].index]
