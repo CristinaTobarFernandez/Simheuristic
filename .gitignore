@@ -10,3 +10,6 @@
 *.pycpython3.10.pyc
 outputs_files/*
 *.csv
+*plots
+*plots/*
+*.ipynb
