@@ -25,18 +25,18 @@ def linear_regresion(X_train, X_test, y_train):
     demand_prediction = model.predict(X_test_trans)
     result['prediction'] = demand_prediction[0]
 
-    # Extract the model info
-    coefficients = model.coef_
-    # Create a list with the information about feature coefficients
-    coefficient_info_list = []
-    for feature_name, coefficient in zip(transformations.get_feature_names_out(), coefficients):
-        # Remove prefixes "remainder__" and "encoder__"
-        feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
-        coefficient_info_list.append(f"{feature_name}: {coefficient:.5f}")
+    # # Extract the model info
+    # coefficients = model.coef_
+    # # Create a list with the information about feature coefficients
+    # coefficient_info_list = []
+    # for feature_name, coefficient in zip(transformations.get_feature_names_out(), coefficients):
+    #     # Remove prefixes "remainder__" and "encoder__"
+    #     feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
+    #     coefficient_info_list.append(f"{feature_name}: {coefficient:.5f}")
 
-    # Save the list to the result dictionary
-    result['Coefficients'] = coefficient_info_list
-    result['model_info'] = 'Coefficients'
+    # # Save the list to the result dictionary
+    # result['Coefficients'] = coefficient_info_list
+    # result['model_info'] = 'Coefficients'
 
     return result
 
@@ -49,33 +49,44 @@ def random_forest(X_train, X_test, y_train):
 
     X_train_trans = transformations.fit_transform(X_train)
     X_test_trans = transformations.transform(X_test)
-    param_grid = {
-        'n_estimators': [10, 20, 50, 100],
-    }
-    # Initialize GridSearchCV for hyperparameter tuning
-    grid_search = GridSearchCV(RandomForestRegressor(random_state=42), param_grid, cv=5)
-    grid_search.fit(X_train_trans, y_train)
-    # Best model found by GridSearchCV
-    model = grid_search.best_estimator_
-    # Inicializar y entrenar el modelo de regresión lineal
-    # model = RandomForestRegressor(n_estimators=100, random_state=42)
+    # param_grid = {
+    #     'n_estimators': [10, 20, 50],  # Reduce the number of estimators
+    #     'max_depth': [None, 10, 20],  # Add max_depth to limit tree depth
+    #     'min_samples_split': [2, 5],  # Add min_samples_split to control tree growth
+    #     'min_samples_leaf': [1, 2]    # Add min_samples_leaf to control tree growth
+    # }
+    # # Initialize GridSearchCV for hyperparameter tuning
+    # grid_search = GridSearchCV(RandomForestRegressor(random_state=42, n_jobs=-1), param_grid, cv=5)
+    # grid_search.fit(X_train_trans, y_train)
+    # # Best model found by GridSearchCV
+    # model = grid_search.best_estimator_
+
+    # Initialize and train the RandomForestRegressor with predefined hyperparameters
+    model = RandomForestRegressor(
+        n_estimators=50,  # Set the number of trees
+        max_depth=10,     # Set the maximum depth of the tree
+        min_samples_split=2,  # Set the minimum number of samples required to split an internal node
+        min_samples_leaf=1,   # Set the minimum number of samples required to be at a leaf node
+        random_state=42,
+        n_jobs=-1
+    )
     model.fit(X_train_trans, y_train)
     # Predecir en el conjunto de prueba
     demand_prediction = model.predict(X_test_trans)
     result['prediction'] = demand_prediction[0]
 
-    # Extract the model info
-    features_importance = model.feature_importances_
-    feature_importance_info_list = []
-    for feature_name, importance in zip(transformations.get_feature_names_out(), features_importance):
-        # Remove prefixes "remainder__" and "encoder__"
-        feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
-        feature_importance_info_list.append(f"{feature_name}: {importance:.5f}\n")
+    # # Extract the model info
+    # features_importance = model.feature_importances_
+    # feature_importance_info_list = []
+    # for feature_name, importance in zip(transformations.get_feature_names_out(), features_importance):
+    #     # Remove prefixes "remainder__" and "encoder__"
+    #     feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
+    #     feature_importance_info_list.append(f"{feature_name}: {importance:.5f}\n")
 
-    # Save the string to the result dictionary
-    result['Features Importance'] = feature_importance_info_list
-    # result['Features Importance'] = features_importance
-    result['model_info'] = 'Features Importance'
+    # # Save the string to the result dictionary
+    # result['Features Importance'] = feature_importance_info_list
+    # # result['Features Importance'] = features_importance
+    # result['model_info'] = 'Features Importance'
 
     return result
 
@@ -97,26 +108,27 @@ def svm(X_train, X_test, y_train):
     X_train_trans = transformations.fit_transform(X_train)
     X_test_trans = transformations.transform(X_test)
     # Adjust SVM model parameters using GridSearchCV
-    param_grid = {
-        'kernel': ['linear', 'rbf'],
-        'C': [0.1, 1, 10, 100],
-        'gamma': ['scale', 'auto']
-    }
-    grid_search = GridSearchCV(SVR(), param_grid, cv=5)
-    grid_search.fit(X_train_trans, y_train)
+    # param_grid = {
+    #     'kernel': ['linear', 'rbf'],
+    #     'C': [0.1, 1, 10, 100],
+    #     'gamma': ['scale', 'auto']
+    # }
+    # grid_search = GridSearchCV(SVR(), param_grid, cv=5)
+    # grid_search.fit(X_train_trans, y_train)
     
     # Best model found by GridSearchCV
-    model = grid_search.best_estimator_
+    # model = grid_search.best_estimator_
+    model = SVR(kernel='rbf', C=1, gamma='scale')
     model.fit(X_train_trans, y_train)
     # Predecir en el conjunto de prueba
     demand_prediction = model.predict(X_test_trans)
     result['prediction'] = demand_prediction[0]
 
-    # Extract the model info
-    support_index = model.support_
-    support_vector = X_train.iloc[support_index].reset_index(drop=True)
-    result['Support Vector'] = support_index
-    result['model_info'] = 'Support Vector'
+    # # Extract the model info
+    # support_index = model.support_
+    # support_vector = X_train.iloc[support_index].reset_index(drop=True)
+    # result['Support Vector'] = support_index
+    # result['model_info'] = 'Support Vector'
 
     return result
 
@@ -129,38 +141,38 @@ def neural_network(X_train, X_test, y_train):
     X_train_trans = transformations.fit_transform(X_train)
     X_test_trans = transformations.transform(X_test)
     
-    param_grid = {
-        'alpha': [0.001, 0.01],
-        'activation': ['relu', 'logistic'],
-        'solver': ['adam', 'sgd']
-    }
+    # param_grid = {
+    #     'alpha': [0.001, 0.01],
+    #     'activation': ['relu', 'logistic'],
+    #     'solver': ['adam', 'sgd']
+    # }
     
-    # Initialize GridSearchCV for hyperparameter tuning
-    grid_search = GridSearchCV(MLPRegressor(random_state=42), param_grid, cv=5)
-    grid_search.fit(X_train_trans, y_train)
+    # # Initialize GridSearchCV for hyperparameter tuning
+    # grid_search = GridSearchCV(MLPRegressor(random_state=42), param_grid, cv=5)
+    # grid_search.fit(X_train_trans, y_train)
     
-    # Best model found by GridSearchCV
-    model = grid_search.best_estimator_
+    # # Best model found by GridSearchCV
+    # model = grid_search.best_estimator_
     # Inicializar y entrenar el modelo de redes neuronales
-    # model = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu', solver='adam', random_state=42)
+    model = MLPRegressor(hidden_layer_sizes=(50, 50), activation='relu', solver='adam', random_state=42)
     model.fit(X_train_trans, y_train)
     
     # Predecir en el conjunto de prueba
     demand_prediction = model.predict(X_test_trans)
     result['prediction'] = demand_prediction[0]
 
-    # Extract the model info
-    features_importance = model.coefs_ # coefs_list de forma (n_layers - 1,) El elemento i-ésimo en la lista representa la matriz de ponderación correspondiente a la capa i.
-    feature_importance_info_list = []
-    for feature_name, importance in zip(transformations.get_feature_names_out(), list(features_importance[0])):
-        # Remove prefixes "remainder__" and "encoder__"
-        feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
-        feature_importance_info_list.append(f"{feature_name}: {np.mean(importance):.5f}\n") # La media de las flechas que salen de cada variable a las siguientes 50 neuronas de la capa 2
+    # # Extract the model info
+    # features_importance = model.coefs_ # coefs_list de forma (n_layers - 1,) El elemento i-ésimo en la lista representa la matriz de ponderación correspondiente a la capa i.
+    # feature_importance_info_list = []
+    # for feature_name, importance in zip(transformations.get_feature_names_out(), list(features_importance[0])):
+    #     # Remove prefixes "remainder__" and "encoder__"
+    #     feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
+    #     feature_importance_info_list.append(f"{feature_name}: {np.mean(importance):.5f}\n") # La media de las flechas que salen de cada variable a las siguientes 50 neuronas de la capa 2
 
-    # Save the string to the result dictionary
-    result['Features Importance'] = feature_importance_info_list
+    # # Save the string to the result dictionary
+    # result['Features Importance'] = feature_importance_info_list
 
-    result['model_info'] = 'Features Importance'
+    # result['model_info'] = 'Features Importance'
 
     return result
 
@@ -175,19 +187,19 @@ def xgboost_lgbm(X_train, X_test, y_train):
     X_train_trans = transformations.fit_transform(X_train)
     X_test_trans = transformations.transform(X_test)
     
-    # Inicializar y entrenar el modelo de XGBoost o LightGBM
-    # model = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
-    param_grid = {
-        'learning_rate': [0.01, 0.1, 0.3],
-        'max_depth': [3, 5]
-    }
+    # Inicializar y entrenar el modelo de XGBoost 
+    model = XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+    # param_grid = {
+    #     'learning_rate': [0.01, 0.1, 0.3],
+    #     'max_depth': [3, 5]
+    # }
     
-    # Initialize GridSearchCV for hyperparameter tuning
-    grid_search = GridSearchCV(XGBRegressor(random_state=42), param_grid, cv=5)
-    grid_search.fit(X_train_trans, y_train)
+    # # Initialize GridSearchCV for hyperparameter tuning
+    # grid_search = GridSearchCV(XGBRegressor(random_state=42), param_grid, cv=5)
+    # grid_search.fit(X_train_trans, y_train)
     
-    # Best model found by GridSearchCV
-    model = grid_search.best_estimator_
+    # # Best model found by GridSearchCV
+    # model = grid_search.best_estimator_
     model.fit(X_train_trans, y_train)
     
     # Predecir en el conjunto de prueba
@@ -196,14 +208,14 @@ def xgboost_lgbm(X_train, X_test, y_train):
 
     # Puedes obtener información adicional sobre la importancia de las características si lo deseas.
     # Obtener la importancia de las características
-    features_importance = model.feature_importances_
-    feature_importance_info_list = []
-    for feature_name, importance in zip(transformations.get_feature_names_out(), features_importance):
-        # Remove prefixes "remainder__" and "encoder__"
-        feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
-        feature_importance_info_list.append(f"{feature_name}: {importance:.5f}\n")
-    result['Features Importance'] = feature_importance_info_list
-    result['model_info'] = 'Features Importance'
+    # features_importance = model.feature_importances_
+    # feature_importance_info_list = []
+    # for feature_name, importance in zip(transformations.get_feature_names_out(), features_importance):
+    #     # Remove prefixes "remainder__" and "encoder__"
+    #     feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
+    #     feature_importance_info_list.append(f"{feature_name}: {importance:.5f}\n")
+    # result['Features Importance'] = feature_importance_info_list
+    # result['model_info'] = 'Features Importance'
 
     return result
 
@@ -217,38 +229,37 @@ def ridge_regression(X_train, X_test, y_train):
     X_train_trans = transformations.fit_transform(X_train)
     X_test_trans = transformations.transform(X_test)
     
-    # Inicializar y entrenar el modelo de regresión Ridge
-    param_grid = {
-        'alpha': [0.01, 0.1, 1, 10, 100]
-    }
+    # # Inicializar y entrenar el modelo de regresión Ridge
+    # param_grid = {
+    #     'alpha': [0.01, 0.1, 1, 10, 100]
+    # }
     
-    # Inicializar la búsqueda de hiperparámetros con validación cruzada
-    grid_search = GridSearchCV(Ridge(random_state=42), param_grid, cv=5)
-    grid_search.fit(X_train_trans, y_train)
+    # # Inicializar la búsqueda de hiperparámetros con validación cruzada
+    # grid_search = GridSearchCV(Ridge(random_state=42), param_grid, cv=5)
+    # grid_search.fit(X_train_trans, y_train)
     
-    # Mejor modelo encontrado por GridSearchCV
-    model = grid_search.best_estimator_
+    # # Mejor modelo encontrado por GridSearchCV
+    # model = grid_search.best_estimator_
+    model = Ridge(alpha=1.0, random_state=42)
     model.fit(X_train_trans, y_train)
-    # model = Ridge(alpha=1.0, random_state=42)
-    # model.fit(X_train_trans, y_train)
     
     # Predecir en el conjunto de prueba
     ridge_prediction = model.predict(X_test_trans)
     
     result['prediction'] = ridge_prediction[0]
 
-    # Extract the model info
-    coefficients = model.coef_
-    # Create a list with the information about feature coefficients
-    coefficient_info_list = []
-    for feature_name, coefficient in zip(transformations.get_feature_names_out(), coefficients):
-        # Remove prefixes "remainder__" and "encoder__"
-        feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
-        coefficient_info_list.append(f"{feature_name}: {coefficient:.5f}")
+    # # Extract the model info
+    # coefficients = model.coef_
+    # # Create a list with the information about feature coefficients
+    # coefficient_info_list = []
+    # for feature_name, coefficient in zip(transformations.get_feature_names_out(), coefficients):
+    #     # Remove prefixes "remainder__" and "encoder__"
+    #     feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
+    #     coefficient_info_list.append(f"{feature_name}: {coefficient:.5f}")
 
-    # Save the list to the result dictionary
-    result['Coefficients'] = coefficient_info_list
-    result['model_info'] = 'Coefficients'
+    # # Save the list to the result dictionary
+    # result['Coefficients'] = coefficient_info_list
+    # result['model_info'] = 'Coefficients'
 
     return result
 
@@ -263,35 +274,35 @@ def lasso_regression(X_train, X_test, y_train):
     X_test_trans = transformations.transform(X_test)
     
     # Inicializar y entrenar el modelo de regresión Lasso
-    param_grid = {
-        'alpha': [0.01, 0.1, 1, 10, 100]
-    }
+    # param_grid = {
+    #     'alpha': [0.01, 0.1, 1, 10, 100]
+    # }
     
-    # Inicializar la búsqueda de hiperparámetros con validación cruzada
-    grid_search = GridSearchCV(Lasso(random_state=42), param_grid, cv=5)
-    grid_search.fit(X_train_trans, y_train)
+    # # Inicializar la búsqueda de hiperparámetros con validación cruzada
+    # grid_search = GridSearchCV(Lasso(random_state=42), param_grid, cv=5)
+    # grid_search.fit(X_train_trans, y_train)
     
-    # Mejor modelo encontrado por GridSearchCV
-    model = grid_search.best_estimator_
-    # model = Lasso(alpha=1.0, random_state=42)
-    # model.fit(X_train_trans, y_train)
+    # # Mejor modelo encontrado por GridSearchCV
+    # model = grid_search.best_estimator_
+    model = Lasso(alpha=1.0, random_state=42)
+    model.fit(X_train_trans, y_train)
     
     # Predecir en el conjunto de prueba
     lasso_prediction = model.predict(X_test_trans)
     
     result['prediction'] = lasso_prediction[0]
     # Extract the model info
-    coefficients = model.coef_
-    # Create a list with the information about feature coefficients
-    coefficient_info_list = []
-    for feature_name, coefficient in zip(transformations.get_feature_names_out(), coefficients):
-        # Remove prefixes "remainder__" and "encoder__"
-        feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
-        coefficient_info_list.append(f"{feature_name}: {coefficient:.5f}")
+    # coefficients = model.coef_
+    # # Create a list with the information about feature coefficients
+    # coefficient_info_list = []
+    # for feature_name, coefficient in zip(transformations.get_feature_names_out(), coefficients):
+    #     # Remove prefixes "remainder__" and "encoder__"
+    #     feature_name = feature_name.replace("remainder__", "").replace("encoder__", "")
+    #     coefficient_info_list.append(f"{feature_name}: {coefficient:.5f}")
 
-    # Save the list to the result dictionary
-    result['Coefficients'] = coefficient_info_list
-    result['model_info'] = 'Coefficients'
+    # # Save the list to the result dictionary
+    # result['Coefficients'] = coefficient_info_list
+    # result['model_info'] = 'Coefficients'
 
     return result
 
