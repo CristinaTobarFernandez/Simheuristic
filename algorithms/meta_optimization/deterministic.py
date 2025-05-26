@@ -12,7 +12,7 @@ class Deterministic:
 
     def solve(self):
         start_time = time.time()
-        best_solution = None
+        best_solutions = []
         max_iterations = 10
         alpha = 0.2
         for _ in range(max_iterations):
@@ -23,24 +23,32 @@ class Deterministic:
             # Improve the constructed solution
             self.improve(solution)
             # Update the best solutuon if the new solution is better
-            if best_solution is None:
-                best_solution = solution
-            elif solution.is_better_than(best_solution):
+            if len(best_solutions) < 5:
+                best_solutions.append(copy.deepcopy(solution))
+                best_solutions.sort(key=lambda sol: sol.total_cost)
+            elif solution.is_better_than(best_solutions[-1]):
                 logging.info(f"New best solution found with cost {solution.total_cost}")
-                best_solution = copy.deepcopy(solution)
-        logging.info(f"Best solution: {best_solution.total_cost}")
+                best_solutions[-1] = copy.deepcopy(solution)
+                best_solutions.sort(key=lambda sol: sol.total_cost)
+        logging.info(f"Best solutions: {[sol.total_cost for sol in best_solutions]}")
         execution_time = time.time() - start_time
-
-        solution = Solution(self.instance.problem)
-        solution.set_execution_time(execution_time)
-        for customer in best_solution.route:
-            solution.add_customer(customer)
-        solution.compute_metrics()
-        return solution
+        
+        solutions = []
+        for best_solution in best_solutions:
+            solution = Solution(self.instance.problem)
+            solution.set_execution_time(execution_time)
+            for customer in best_solution.route:
+                solution.add_customer(customer)
+            solution.compute_metrics()
+            solutions.append(solution)
+        return solutions
 
 
     def constructive_heuristic(self, alpha):
         # Podría ser que no haya clientes que puedan ser el primer cliente ya que su demanda es mayor que la capacidad de la camioneta
+        cost_per_km = self.instance.cost_per_km
+        cost_per_no_del_demand = self.instance.cost_per_no_del_demand
+        distance_matrix = self.instance.distance_matrix
         posibles_first_customers = [customer for customer in self.instance.customers_list if customer.demand_determined <= self.instance.truck_capacity]
         if len(posibles_first_customers) == 0:
             logging.info("No hay clientes que puedan ser el primer cliente")
@@ -62,8 +70,8 @@ class Deterministic:
             candidate_customers = []
             for customer in unvisited_customers:
                 value = (
-                    self.instance.cost_per_km * self.instance.distance_matrix[current_customer.index][customer.index] -
-                    self.instance.cost_per_no_del_demand * customer.demand_determined
+                    cost_per_km * distance_matrix[current_customer.index][customer.index] -
+                    cost_per_no_del_demand * customer.demand_determined
                 )
                 if capacity_used + customer.demand_determined <= self.instance.truck_capacity:
                     candidate_customers.append((customer, value))
@@ -86,7 +94,7 @@ class Deterministic:
             next_customer = best_candidate[0]
 
             # Actualizar el costo total
-            total_cost += self.instance.cost_per_km * self.instance.distance_matrix[current_customer.index][next_customer.index]
+            total_cost += cost_per_km * distance_matrix[current_customer.index][next_customer.index]
             total_demand_not_delivered -= next_customer.demand_determined
             capacity_used += next_customer.demand_determined
 
@@ -96,9 +104,9 @@ class Deterministic:
             unvisited_customers.remove(current_location)
 
         # Regresar al depósito
-        total_cost += self.instance.cost_per_km * self.instance.distance_matrix[current_customer.index][0]
+        total_cost += cost_per_km * distance_matrix[current_customer.index][0]
         # Considerar la penalización por demanda no entregada
-        total_cost += self.instance.cost_per_no_del_demand * total_demand_not_delivered
+        total_cost += cost_per_no_del_demand * total_demand_not_delivered
         solution = SolutionPCTSP(self.instance)
         for customer in route:
             solution.add_customer(customer)

@@ -12,13 +12,18 @@ class SolutionPCTSP:
         self.route.append(customer)
 
     def compute_total_cost(self, ms: bool = False, ms_method = None, num_scenarios = None, alpha = None):
+        cost_per_km = self.instance.cost_per_km
+        cost_per_no_del_demand = self.instance.cost_per_no_del_demand
+        distance_matrix = self.instance.distance_matrix
         if ms:
             cost_per_scenario = []
             for scenario in range(num_scenarios):
-                cost = sum([customer.demand_scenarios[scenario] for customer in self.route])*self.instance.cost_per_no_del_demand
+                cost = self.instance.get_initial_cost_by_scenario(scenario)
                 for i in range(len(self.route)):
-                    cost += self.instance.cost_per_km * self.instance.distance_matrix[self.route[i-1].index][self.route[i].index]
-                    cost -= self.instance.cost_per_no_del_demand * self.route[i].demand_scenarios[scenario]
+                    prev = self.route[i-1]
+                    curr = self.route[i]
+                    cost += cost_per_km * distance_matrix[prev.index][curr.index]
+                    cost -= cost_per_no_del_demand * curr.demand_scenarios[scenario]
                 cost_per_scenario.append(cost)
             if ms_method == MultiScenarioMethod.MAXIMUM_EXPECTATION:
                 self.total_cost = mean(cost_per_scenario)
@@ -27,10 +32,14 @@ class SolutionPCTSP:
             elif ms_method == MultiScenarioMethod.CVAR:
                 self.total_cost = self.compute_cvar(cost_per_scenario, alpha)
         else:
-            self.total_cost = sum([customer.demand_determined for customer in self.route])*self.instance.cost_per_no_del_demand
+            self.total_cost = self.instance.get_initial_determined_cost()
             for i in range(len(self.route)):
-                self.total_cost += self.instance.cost_per_km * self.instance.distance_matrix[self.route[i-1].index][self.route[i].index]
-                self.total_cost -= self.instance.cost_per_no_del_demand * self.route[i].demand_determined
+                prev_index = self.route[i-1].index
+                curr_index = self.route[i].index
+                demand_determined = self.route[i].demand_determined
+
+                self.total_cost += cost_per_km * distance_matrix[prev_index][curr_index]
+                self.total_cost -= cost_per_no_del_demand * demand_determined
 
     def is_feasible(self):
         capacity_used = sum([customer.demand_determined for customer in self.route])

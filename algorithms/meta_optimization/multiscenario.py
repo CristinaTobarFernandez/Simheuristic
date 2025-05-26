@@ -16,7 +16,7 @@ class MultiScenario:
 
     def solve(self):
         start_time = time.time()
-        best_solution = None
+        best_solutions = []
         max_iterations = 10
         alpha_constructive = 0.2
         for _ in range(max_iterations):
@@ -27,20 +27,25 @@ class MultiScenario:
             # Improve the constructed solution
             self.improve(solution)
             # Update the best solutuon if the new solution is better
-            if best_solution is None:
-                best_solution = solution
-            elif solution.is_better_than(best_solution):
-                logging.info(f"New best solution found with cost {solution.total_cost}")
-                best_solution = copy.deepcopy(solution)
-        logging.info(f"Best solution: {best_solution.total_cost}")
+            if len(best_solutions) < 5:
+                best_solutions.append(copy.deepcopy(solution))
+                best_solutions.sort(key=lambda sol: sol.total_cost)
+            elif solution.is_better_than(best_solutions[-1]):
+                logging.info(f"New better solution found with cost {solution.total_cost}")
+                best_solutions[-1] = copy.deepcopy(solution)
+                best_solutions.sort(key=lambda sol: sol.total_cost)
+        logging.info(f"Best solutions: {[sol.total_cost for sol in best_solutions]}")
         execution_time = time.time() - start_time
 
-        solution = Solution(self.instance.problem)
-        solution.set_execution_time(execution_time)
-        for customer in best_solution.route:
-            solution.add_customer(customer)
-        solution.compute_metrics()
-        return solution
+        solutions = []
+        for best_solution in best_solutions:
+            solution = Solution(self.instance.problem)
+            solution.set_execution_time(execution_time)
+            for customer in best_solution.route:
+                solution.add_customer(customer)
+            solution.compute_metrics()
+            solutions.append(solution)
+        return solutions
 
 
     def constructive_heuristic(self, alpha_constructive):
